@@ -72,7 +72,7 @@ jobs:
 
       - name: Build Guile
         working-directory: guile-src
-        run: make -j$(nproc) 2>&1 | tee $HOME/guile-build.log
+        run: make -j$(nproc) 2>&1 | tee /home/runneradmin/guile-build.log
 
       - name: Install Guile
         working-directory: guile-src
@@ -88,9 +88,7 @@ jobs:
           echo "PWD is: $PWD"
           ls $HOME/
           ls /mingw64/bin/guile* || echo "no guile in /mingw64/bin"
-          find / -name "libguile*.dll" 2>/dev/null | head -10
-          find / -name "guile-build.log" 2>/dev/null | head -10
-
+          continue-on-error: true
       # ── Package everything up ─────────────────────────────────────────────
       - name: Collect all deps into archive
         run: |
