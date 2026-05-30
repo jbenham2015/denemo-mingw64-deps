@@ -82,6 +82,14 @@ jobs:
         run: |
           /mingw64/bin/guile --version
           pkg-config --modversion guile-3.0
+      - name: Debug paths
+        run: |
+          echo "HOME is: $HOME"
+          echo "PWD is: $PWD"
+          ls $HOME/
+          ls /mingw64/bin/guile* || echo "no guile in /mingw64/bin"
+          find / -name "libguile*.dll" 2>/dev/null | head -10
+          find / -name "guile-build.log" 2>/dev/null | head -10
 
       # ── Package everything up ─────────────────────────────────────────────
 
@@ -96,12 +104,11 @@ jobs:
           cp -r /mingw64/share/guile $HOME/denemo-deps/share-guile
           cd $HOME
           tar czf denemo-mingw64-deps.tar.gz denemo-deps/
-
       - name: Upload deps artifact
         uses: actions/upload-artifact@v4
         with:
           name: denemo-mingw64-deps
-          path: ~/guile-build.log
+          path: C:/msys64/mingw64/bin/guile.exe
           retention-days: 90
 
       - name: Upload build log
