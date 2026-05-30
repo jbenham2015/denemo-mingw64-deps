@@ -92,23 +92,21 @@ jobs:
           find / -name "guile-build.log" 2>/dev/null | head -10
 
       # ── Package everything up ─────────────────────────────────────────────
-
       - name: Collect all deps into archive
         run: |
-          mkdir -p /tmp/denemo-deps
-          # Copy all mingw64 runtime libs and headers
-          mkdir -p $HOME/denemo-deps
-          cp -r /mingw64/include $HOME/denemo-deps/
-          cp -r /mingw64/lib $HOME/denemo-deps/
-          cp -r /mingw64/bin $HOME/denemo-deps/
-          cp -r /mingw64/share/guile $HOME/denemo-deps/share-guile
-          cd $HOME
+          mkdir -p /home/runneradmin/denemo-deps
+          cp -r /mingw64/include /home/runneradmin/denemo-deps/
+          cp -r /mingw64/lib /home/runneradmin/denemo-deps/
+          cp -r /mingw64/bin /home/runneradmin/denemo-deps/
+          cp -r /mingw64/share/guile /home/runneradmin/denemo-deps/share-guile
+          cd /home/runneradmin
           tar czf denemo-mingw64-deps.tar.gz denemo-deps/
+
       - name: Upload deps artifact
         uses: actions/upload-artifact@v4
         with:
           name: denemo-mingw64-deps
-          path: C:/msys64/mingw64/bin/guile.exe
+          path: /home/runneradmin/denemo-mingw64-deps.tar.gz
           retention-days: 90
 
       - name: Upload build log
@@ -116,7 +114,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: guile-build-log
-          path: guile-build.log
+          path: /home/runneradmin/guile-build.log
+
 
       # ── Publish as a GitHub Release (when triggered by a tag) ─────────────
 
