@@ -40,6 +40,7 @@ jobs:
             mingw-w64-x86_64-aubio
             mingw-w64-x86_64-autotools
             mingw-w64-x86_64-texinfo
+            mingw-w64-x86_64-gperf
 
       # ── Build Guile from patched branch ───────────────────────────────────
 
