@@ -72,7 +72,7 @@ jobs:
 
       - name: Build Guile
         working-directory: guile-src
-        run: make -j$(nproc) 2>&1 | tee ../../guile-build.log
+        run: make -j$(nproc) 2>&1 | tee $HOME/guile-build.log
 
       - name: Install Guile
         working-directory: guile-src
@@ -89,19 +89,19 @@ jobs:
         run: |
           mkdir -p /tmp/denemo-deps
           # Copy all mingw64 runtime libs and headers
-          cp -r /mingw64/include /tmp/denemo-deps/
-          cp -r /mingw64/lib /tmp/denemo-deps/
-          cp -r /mingw64/bin /tmp/denemo-deps/
-          cp -r /mingw64/share/guile /tmp/denemo-deps/share-guile
-          # Create the tarball
-          cd /tmp
+          mkdir -p $HOME/denemo-deps
+          cp -r /mingw64/include $HOME/denemo-deps/
+          cp -r /mingw64/lib $HOME/denemo-deps/
+          cp -r /mingw64/bin $HOME/denemo-deps/
+          cp -r /mingw64/share/guile $HOME/denemo-deps/share-guile
+          cd $HOME
           tar czf denemo-mingw64-deps.tar.gz denemo-deps/
 
       - name: Upload deps artifact
         uses: actions/upload-artifact@v4
         with:
           name: denemo-mingw64-deps
-          path: /tmp/denemo-mingw64-deps.tar.gz
+          path: ~/guile-build.log
           retention-days: 90
 
       - name: Upload build log
