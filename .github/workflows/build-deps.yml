@@ -83,6 +83,7 @@ jobs:
           /mingw64/bin/guile --version
           pkg-config --modversion guile-3.0
       - name: Debug paths
+        continue-on-error: true
         run: |
           echo "HOME is: $HOME"
           echo "PWD is: $PWD"
