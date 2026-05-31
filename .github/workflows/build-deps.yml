@@ -42,8 +42,6 @@ jobs:
             mingw-w64-x86_64-texinfo
             mingw-w64-x86_64-gperf
 
-      # ── Build Guile from patched branch ───────────────────────────────────
-
       - name: Clone patched Guile
         run: |
           git clone --branch wip-mingw-2025 --depth 1 \
@@ -51,8 +49,7 @@ jobs:
 
       - name: Bootstrap Guile
         working-directory: guile-src
-        run: |
-          ./autogen.sh
+        run: ./autogen.sh
 
       - name: Configure Guile
         working-directory: guile-src
@@ -82,15 +79,7 @@ jobs:
         run: |
           /mingw64/bin/guile --version
           pkg-config --modversion guile-3.0
-      - name: Debug paths
-        continue-on-error: true
-        run: |
-          echo "HOME is: $HOME"
-          echo "PWD is: $PWD"
-          ls $HOME/
-          ls /mingw64/bin/guile* || echo "no guile in /mingw64/bin"
-          continue-on-error: true
-      # ── Package everything up ─────────────────────────────────────────────
+
       - name: Collect all deps into archive
         run: |
           mkdir -p /home/runneradmin/denemo-deps
@@ -115,16 +104,13 @@ jobs:
           name: guile-build-log
           path: /home/runneradmin/guile-build.log
 
-
-      # ── Publish as a GitHub Release (when triggered by a tag) ─────────────
-
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: /tmp/denemo-mingw64-deps.tar.gz
+          files: /home/runneradmin/denemo-mingw64-deps.tar.gz
           name: Denemo MinGW64 Dependencies ${{ github.ref_name }}
           body: |
             MinGW64 dependency bundle for building Denemo on Windows.
-            Includes: Guile (wip-mingw-2025), GTK3, FluidSynth, PortAudio, 
+            Includes: Guile (wip-mingw-2025), GTK3, FluidSynth, PortAudio,
             libxml2, aubio, and all other Denemo dependencies.
