@@ -72,7 +72,7 @@ jobs:
 
       - name: Build Guile
         working-directory: guile-src
-        run: make -j$(nproc) 2>&1 | tee /home/runneradmin/guile-build.log
+        run: make -j1 2>&1 | tee /home/runneradmin/guile-build.log
 
       - name: Install Guile
         working-directory: guile-src
