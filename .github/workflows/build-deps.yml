@@ -80,7 +80,7 @@ jobs:
           /mingw64/bin/guile --version
           pkg-config --modversion guile-3.0
 
-- name: Collect all deps into archive
+      - name: Collect all deps into archive
         run: |
           set -x
           mkdir -p /home/runneradmin/denemo-deps
