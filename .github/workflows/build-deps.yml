@@ -82,10 +82,13 @@ jobs:
 
       - name: Collect Guile artifacts
         run: |
+          # Check what guild-related files were installed
+          ls /mingw64/bin/guild* || echo "no guild found"
           cd /
           tar czf /d/a/denemo-mingw64-deps/denemo-mingw64-deps/denemo-mingw64-deps.tar.gz \
             mingw64/bin/guile.exe \
             mingw64/bin/guile-config \
+            mingw64/bin/guild \
             mingw64/bin/libguile-3.0-1.dll \
             mingw64/lib/libguile* \
             mingw64/lib/pkgconfig/guile-3.0.pc \
