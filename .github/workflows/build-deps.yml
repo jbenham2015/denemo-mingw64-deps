@@ -79,13 +79,12 @@ jobs:
         run: |
           /mingw64/bin/guile --version
           pkg-config --modversion guile-3.0
-
       - name: Precompile Guile standard library
         working-directory: guile-src
         run: |
           make -j$(nproc) compile-preamble 2>&1 | tail -20 || true
           echo "Compiled $(find /mingw64/lib/guile/3.0/ccache -name '*.go' | wc -l) .go files"
-      
+
       - name: Collect Guile artifacts
         run: |
           ls /mingw64/bin/guild* || echo "no guild found"
