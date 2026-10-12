@@ -1,4 +1,4 @@
-name: Build Denemo MinGW64 Dependencies
+name: Build Denemo UCRT64 Dependencies
 
 on:
   workflow_dispatch:
@@ -19,27 +19,27 @@ jobs:
 
       - uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
+          msystem: UCRT64
           update: true
           install: >-
             base-devel
             git
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-pkg-config
-            mingw-w64-x86_64-gc
-            mingw-w64-x86_64-libunistring
-            mingw-w64-x86_64-libiconv
-            mingw-w64-x86_64-gettext
-            mingw-w64-x86_64-libffi
-            mingw-w64-x86_64-glib2
-            mingw-w64-x86_64-gtk3
-            mingw-w64-x86_64-libxml2
-            mingw-w64-x86_64-portaudio
-            mingw-w64-x86_64-fluidsynth
-            mingw-w64-x86_64-libsndfile
-            mingw-w64-x86_64-aubio
-            mingw-w64-x86_64-autotools
-            mingw-w64-x86_64-texinfo
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-pkg-config
+            mingw-w64-ucrt-x86_64-gc
+            mingw-w64-ucrt-x86_64-libunistring
+            mingw-w64-ucrt-x86_64-libiconv
+            mingw-w64-ucrt-x86_64-gettext
+            mingw-w64-ucrt-x86_64-libffi
+            mingw-w64-ucrt-x86_64-glib2
+            mingw-w64-ucrt-x86_64-gtk3
+            mingw-w64-ucrt-x86_64-libxml2
+            mingw-w64-ucrt-x86_64-portaudio
+            mingw-w64-ucrt-x86_64-fluidsynth
+            mingw-w64-ucrt-x86_64-libsndfile
+            mingw-w64-ucrt-x86_64-aubio
+            mingw-w64-ucrt-x86_64-autotools
+            mingw-w64-ucrt-x86_64-texinfo
 
       # ── Build Guile from patched branch ───────────────────────────────────
 
@@ -57,50 +57,51 @@ jobs:
         working-directory: guile-src
         run: |
           ./configure \
-            --prefix=/mingw64 \
+            --prefix=/ucrt64 \
             --enable-mini-gmp \
             --enable-shared \
             --enable-static \
             --disable-nls \
             CFLAGS="-g -O2 -Wno-incompatible-pointer-types -Wno-int-conversion" \
-            CPPFLAGS="-I/mingw64/include -isystem C:/msys64/mingw64/include" \
-            LDFLAGS="-L/mingw64/lib" \
-            PKG_CONFIG_PATH="/mingw64/lib/pkgconfig" \
-            BDW_GC_CFLAGS="-I/mingw64/include" \
-            BDW_GC_LIBS="-L/mingw64/lib -lgc"
+            CPPFLAGS="-I/ucrt64/include" \
+            LDFLAGS="-L/ucrt64/lib" \
+            PKG_CONFIG_PATH="/ucrt64/lib/pkgconfig" \
+            BDW_GC_CFLAGS="-I/ucrt64/include" \
+            BDW_GC_LIBS="-L/ucrt64/lib -lgc"
 
       - name: Build Guile
         working-directory: guile-src
-        run: make -j$(nproc) 2>&1 | tee ../../guile-build.log
+        run: make -j$(nproc) 2>&1 | tee ../guile-build.log
 
       - name: Install Guile
         working-directory: guile-src
-        run: make install
+        run: |
+          make install
+          # Second install into a staging dir so we can package ONLY Guile
+          make install DESTDIR=/tmp/guile-stage
 
       - name: Verify Guile
         run: |
-          /mingw64/bin/guile --version
+          /ucrt64/bin/guile --version
           pkg-config --modversion guile-3.0
+          # No leftover references to the old prefix
+          grep -l "/mingw64" /ucrt64/bin/guild /ucrt64/bin/guile-config \
+            /ucrt64/lib/pkgconfig/guile-3.0.pc && echo "WARNING: old prefix found" || echo "prefix OK"
 
-      # ── Package everything up ─────────────────────────────────────────────
+      # ── Package only Guile (everything else comes from pacman) ────────────
 
-      - name: Collect all deps into archive
+      - name: Package Guile
         run: |
-          mkdir -p /tmp/denemo-deps
-          # Copy all mingw64 runtime libs and headers
-          cp -r /mingw64/include /tmp/denemo-deps/
-          cp -r /mingw64/lib /tmp/denemo-deps/
-          cp -r /mingw64/bin /tmp/denemo-deps/
-          cp -r /mingw64/share/guile /tmp/denemo-deps/share-guile
-          # Create the tarball
           cd /tmp
-          tar czf denemo-mingw64-deps.tar.gz denemo-deps/
+          # Archive root = contents of /ucrt64, so it extracts straight into it
+          tar czf denemo-ucrt64-deps.tar.gz -C /tmp/guile-stage/ucrt64 .
+          tar tzf denemo-ucrt64-deps.tar.gz | grep -E 'libguile|guild|guile-3.0.pc' | head
 
       - name: Upload deps artifact
         uses: actions/upload-artifact@v4
         with:
-          name: denemo-mingw64-deps
-          path: /tmp/denemo-mingw64-deps.tar.gz
+          name: denemo-ucrt64-deps
+          path: /tmp/denemo-ucrt64-deps.tar.gz
           retention-days: 90
 
       - name: Upload build log
@@ -116,9 +117,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: /tmp/denemo-mingw64-deps.tar.gz
-          name: Denemo MinGW64 Dependencies ${{ github.ref_name }}
+          files: /tmp/denemo-ucrt64-deps.tar.gz
+          name: Denemo UCRT64 Dependencies ${{ github.ref_name }}
           body: |
-            MinGW64 dependency bundle for building Denemo on Windows.
-            Includes: Guile (wip-mingw-2025), GTK3, FluidSynth, PortAudio, 
-            libxml2, aubio, and all other Denemo dependencies.
+            UCRT64 Guile build (wip-mingw-2025) for building Denemo on Windows.
+            Extract into the UCRT64 prefix (/ucrt64). Other dependencies come from pacman.
