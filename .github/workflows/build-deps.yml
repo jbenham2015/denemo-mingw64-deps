@@ -41,7 +41,7 @@ jobs:
             mingw-w64-ucrt-x86_64-autotools
             mingw-w64-ucrt-x86_64-texinfo
             mingw-w64-ucrt-x86_64-gperf
-            flex
+            mingw-w64-ucrt-x86_64-flex
 
       # ── Build Guile from patched branch ───────────────────────────────────
 
@@ -94,17 +94,19 @@ jobs:
 
       - name: Package Guile
         run: |
-          cd /tmp
-          # Archive root = contents of /ucrt64, so it extracts straight into it
-          tar czf denemo-ucrt64-deps.tar.gz -C /tmp/guile-stage/ucrt64 .
-          tar tzf denemo-ucrt64-deps.tar.gz | grep -E 'libguile|guild|guile-3.0.pc' | head
+          # Write into the workspace (cwd) so the Windows-native upload action can see it
+          tar czf "$PWD/denemo-ucrt64-deps.tar.gz" -C /tmp/guile-stage/ucrt64 .
+          ls -l denemo-ucrt64-deps.tar.gz
+          tar tzf denemo-ucrt64-deps.tar.gz > /tmp/tarlist.txt
+          grep -E 'libguile|guild|guile-3.0.pc' /tmp/tarlist.txt || { echo "ERROR: Guile files missing from tarball"; exit 1; }
 
       - name: Upload deps artifact
         uses: actions/upload-artifact@v4
         with:
           name: denemo-ucrt64-deps
-          path: /tmp/denemo-ucrt64-deps.tar.gz
+          path: denemo-ucrt64-deps.tar.gz
           retention-days: 90
+          if-no-files-found: error
 
       - name: Upload build log
         if: always()
@@ -119,7 +121,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: /tmp/denemo-ucrt64-deps.tar.gz
+          files: denemo-ucrt64-deps.tar.gz
           name: Denemo UCRT64 Dependencies ${{ github.ref_name }}
           body: |
             UCRT64 Guile build (wip-mingw-2025) for building Denemo on Windows.
