@@ -9,6 +9,7 @@ on:
 jobs:
   build-deps:
     runs-on: windows-latest
+    timeout-minutes: 90
 
     defaults:
       run:
@@ -51,11 +52,13 @@ jobs:
             https://github.com/jbenham2015/guile.git guile-src
 
       - name: Bootstrap Guile
+        timeout-minutes: 15
         working-directory: guile-src
         run: |
           ./autogen.sh
 
       - name: Configure Guile
+        timeout-minutes: 15
         working-directory: guile-src
         run: |
           ./configure \
@@ -72,10 +75,12 @@ jobs:
             BDW_GC_LIBS="-L/ucrt64/lib -lgc"
 
       - name: Build Guile
+        timeout-minutes: 50
         working-directory: guile-src
         run: make -j$(nproc) 2>&1 | tee ../guile-build.log
 
       - name: Install Guile
+        timeout-minutes: 15
         working-directory: guile-src
         run: |
           make install
