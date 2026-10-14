@@ -9,7 +9,7 @@ on:
 jobs:
   build-deps:
     runs-on: windows-latest
-    timeout-minutes: 90
+    timeout-minutes: 100
 
     defaults:
       run:
@@ -75,9 +75,22 @@ jobs:
             BDW_GC_LIBS="-L/ucrt64/lib -lgc"
 
       - name: Build Guile
-        timeout-minutes: 50
+        timeout-minutes: 70
         working-directory: guile-src
-        run: make -j$(nproc) 2>&1 | tee ../guile-build.log
+        run: |
+          # make is resumable, so if it stalls we kill it, show what was running, and continue
+          ok=0
+          for attempt in 1 2 3; do
+            echo "=== make attempt $attempt ==="
+            if timeout -k 30 20m make -j2 2>&1 | tee -a ../guile-build.log; then
+              ok=1
+              break
+            fi
+            echo "=== attempt $attempt timed out or failed; processes still running: ==="
+            ps -W 2>&1 | tail -40 || true
+            taskkill //F //IM guile.exe 2>/dev/null || true
+          done
+          [ "$ok" = 1 ] || { echo "make did not finish after 3 attempts"; exit 1; }
 
       - name: Install Guile
         timeout-minutes: 15
