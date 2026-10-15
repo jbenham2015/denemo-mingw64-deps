@@ -9,7 +9,7 @@ on:
 jobs:
   build-deps:
     runs-on: windows-latest
-    timeout-minutes: 100
+    timeout-minutes: 120
 
     defaults:
       run:
@@ -75,22 +75,44 @@ jobs:
             BDW_GC_LIBS="-L/ucrt64/lib -lgc"
 
       - name: Build Guile
-        timeout-minutes: 70
+        timeout-minutes: 75
         working-directory: guile-src
+        env:
+          # Disable Boehm GC parallel marking threads (workaround for GC hangs on Windows)
+          GC_MARKERS: "1"
         run: |
-          # make is resumable, so if it stalls we kill it, show what was running, and continue
+          LOG="$PWD/../guile-build.log"
+          : > "$LOG"
+          tail -n 0 -f "$LOG" &
+          tpid=$!
           ok=0
-          for attempt in 1 2 3; do
-            echo "=== make attempt $attempt ==="
-            if timeout -k 30 20m make -j2 2>&1 | tee -a ../guile-build.log; then
-              ok=1
-              break
-            fi
-            echo "=== attempt $attempt timed out or failed; processes still running: ==="
-            ps -W 2>&1 | tail -40 || true
-            taskkill //F //IM guile.exe 2>/dev/null || true
+          for attempt in 1 2 3 4; do
+            echo "=== make attempt $attempt ===" >> "$LOG"
+            make -j2 >> "$LOG" 2>&1 &
+            mpid=$!
+            last=-1; idle=0
+            while kill -0 $mpid 2>/dev/null; do
+              sleep 10
+              size=$(stat -c %s "$LOG")
+              if [ "$size" = "$last" ]; then idle=$((idle+10)); else idle=0; last=$size; fi
+              if [ "$idle" -ge 600 ]; then
+                echo "=== STALL: no output for ${idle}s; guile.exe CPU time sample 1 ==="
+                tasklist //V //FI "IMAGENAME eq guile.exe" || true
+                sleep 10
+                echo "=== sample 2 (did CPU time change?) ==="
+                tasklist //V //FI "IMAGENAME eq guile.exe" || true
+                taskkill //F //IM guile.exe || true
+                kill $mpid 2>/dev/null || true
+                break
+              fi
+            done
+            rc=0
+            wait $mpid || rc=$?
+            if [ "$rc" -eq 0 ]; then ok=1; break; fi
+            echo "=== attempt $attempt ended with rc=$rc ==="
           done
-          [ "$ok" = 1 ] || { echo "make did not finish after 3 attempts"; exit 1; }
+          kill $tpid 2>/dev/null || true
+          [ "$ok" = 1 ] || { echo "make did not finish after 4 attempts"; exit 1; }
 
       - name: Install Guile
         timeout-minutes: 15
